@@ -6,3 +6,6 @@
 **Soberanía:** Blindaje Finca 5-25533 activo.
 
 *Activo disponible para tracción internacional (49% en oferta).*
+Kach1091@gmail.com 
+64433327 
+IP 35.196.121.218

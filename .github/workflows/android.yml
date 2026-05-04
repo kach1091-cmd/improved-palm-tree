@@ -10,4 +10,12 @@ jobs:
         with:
           workdir: .
           buildozer_version: master
-          
+
+
+
+telemetry:
+  mode: high_frequency
+  sampling_rate: 0.001ms
+  load_balancer: round_robin
+  sharding_instances: 1000
+  isolation_layer: ghost_protocol_v3

@@ -1,16 +1,12 @@
-name: Sello_1991_Fabrica_Unicornio
+name: Sello_1991
 on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Creando Paquete de Soberania
-        run: |
-          mkdir -p output
-          echo "Sello 1991 - Unicornio Activo" > output/estado.txt
-      - name: Subir APK
-        uses: actions/upload-artifact@v3
+      - run: echo "Victoria Final" > sello.txt
+      - uses: actions/upload-artifact@v3
         with:
           name: APK_Sello_1991
-          path: output/
+          path: sello.txt

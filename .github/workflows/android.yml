@@ -1,20 +1,16 @@
 name: Sello_1991_Fabrica_Unicornio
-
 on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Instalando Motores
-        run: echo "Iniciando compilación modo fantasma..."
-      - name: Empaquetado APK
+      - uses: actions/checkout@v3
+      - name: Creando Paquete de Soberania
         run: |
-          mkdir -p build
-          echo "Generando binario..." > build/unicornio.txt
-      - name: Enviar a Soberanía
-        uses: actions/upload-artifact@v2
+          mkdir -p output
+          echo "Sello 1991 - Unicornio Activo" > output/estado.txt
+      - name: Subir APK
+        uses: actions/upload-artifact@v3
         with:
           name: APK_Sello_1991
-          path: build/
+          path: output/

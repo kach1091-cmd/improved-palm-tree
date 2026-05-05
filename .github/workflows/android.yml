@@ -7,15 +7,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build with Buildozer
         uses: ArtemSerebrennkov/buildozer-action@v1
-        with:
-          workdir: .
-          buildozer_version: master
-
-
-
-telemetry:
-  mode: high_frequency
-  sampling_rate: 0.001ms
-  load_balancer: round_robin
-  sharding_instances: 1000
-  isolation_layer: ghost_protocol_v3
+   with:
+   workdir: .
+   buildozer_version: master
+   telemetry:
+   mode: high_frequency
+   sampling_rate: 0.001ms
+   load_balancer: round_robin
+   sharding_instances: 1000
+   isolation_layer: ghost_protocol_v3

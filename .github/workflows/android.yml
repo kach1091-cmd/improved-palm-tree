@@ -1,8 +1,0 @@
-name: Sello_1991
-on: push
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: echo "Victoria Final" > sello.txt.S

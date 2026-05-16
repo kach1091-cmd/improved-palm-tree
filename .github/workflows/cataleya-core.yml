@@ -1,8 +1,9 @@
 name: Sincronia_Vasto_1700
 on: [push]
 jobs:
-  build:
+  ejecucion:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Soberanía Total: Motores 1700 Activos"
+      - name: Sello 1991
+        run: echo "Soberanía Técnica: Finca 5-25533 en línea"

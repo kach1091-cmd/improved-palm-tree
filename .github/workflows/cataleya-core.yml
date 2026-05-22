@@ -1,5 +1,7 @@
 name: Nueva_Obra_Google_SPlus
 on: [push]
+permissions:
+  contents: read
 
 jobs:
   agentes_y_modelos:

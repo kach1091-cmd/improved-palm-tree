@@ -25,4 +25,4 @@ jobs:
         with:
           io_url: ${{ secrets.IO_URL }}
           io_token: ${{ secrets.IO_TOKEN }}
-EOF
+          

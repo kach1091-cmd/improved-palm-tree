@@ -20,5 +20,3 @@ jobs:
           coverity_passphrase: "TU_PASSWORD"
           coverity_project_name: "improved-palm-tree"
           coverity_stream_name: "main"
-          # Agregamos este comando para evitar que busque el repo externo
-          command: "analyze"

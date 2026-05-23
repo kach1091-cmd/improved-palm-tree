@@ -14,8 +14,11 @@ jobs:
       - name: Synopsys Intelligent Security Scan
         uses: synopsys-sig/synopsys-action@v1.12.0
         with:
-          coverity_url: "PON_AQUI_LA_URL_REAL_DE_TU_SERVIDOR"
-          coverity_user: "PON_AQUI_TU_USUARIO"
-          coverity_passphrase: "PON_AQUI_TU_PASSWORD"
+          # Aquí forzamos el uso de Coverity
+          coverity_url: "TU_URL_REAL"
+          coverity_user: "TU_USUARIO"
+          coverity_passphrase: "TU_PASSWORD"
           coverity_project_name: "improved-palm-tree"
           coverity_stream_name: "main"
+          # Agregamos este comando para evitar que busque el repo externo
+          command: "analyze"

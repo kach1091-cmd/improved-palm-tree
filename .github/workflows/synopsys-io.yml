@@ -14,9 +14,8 @@ jobs:
       - name: Synopsys Intelligent Security Scan
         uses: synopsys-sig/synopsys-action@v1.12.0
         with:
-          # Aquí forzamos el uso de Coverity
-          coverity_url: "TU_URL_REAL"
-          coverity_user: "TU_USUARIO"
-          coverity_passphrase: "TU_PASSWORD"
-          coverity_project_name: "improved-palm-tree"
+          coverity_url: ${{ secrets.COVERITY_URL }}
+          coverity_user: ${{ secrets.COVERITY_USER }}
+          coverity_passphrase: ${{ secrets.COVERITY_PASSPHRASE }}
+          coverity_project_name: ${{ github.event.repository.name }}
           coverity_stream_name: "main"

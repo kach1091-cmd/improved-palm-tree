@@ -1,7 +1,3 @@
-# Este flujo de trabajo utiliza acciones que están certificadas por GitHub.
-# Son proporcionadas por un tercero y están gobernadas por
-# Terminos de servicio, política de privacidad y soporte separados.
-
 name: Escaneo de Seguridad Inteligente Synopsys
 
 on:
@@ -26,4 +22,4 @@ jobs:
           coverity_user: ${{ secrets.COVERITY_USER }}
           coverity_passphrase: ${{ secrets.COVERITY_PASSPHRASE }}
           coverity_project_name: ${{ github.event.repository.name }}
-          coverity_stream_name: ${{ github.event.repository.name }}-main
+          coverity_stream_name: main

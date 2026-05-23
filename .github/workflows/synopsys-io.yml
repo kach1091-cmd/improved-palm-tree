@@ -1,3 +1,4 @@
+cat << 'EOF' > .github/workflows/synopsys-io.yml
 # Este flujo de trabajo utiliza acciones que están certificadas por GitHub.
 # Son proporcionadas por un tercero y están gobernadas por
 # Terminos de servicio, política de privacidad y soporte separados.
@@ -24,3 +25,4 @@ jobs:
         with:
           io_url: ${{ secrets.IO_URL }}
           io_token: ${{ secrets.IO_TOKEN }}
+EOF

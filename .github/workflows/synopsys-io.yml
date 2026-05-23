@@ -1,25 +1,26 @@
-# Este flujo de trabajo utiliza acciones que estan certificadas por GitHub.
-# Son proporcionadas por un tercero y estan gobernadas por
-# Terminos de servicio, politica de privacidad y soporte separados.
+# Este flujo de trabajo utiliza acciones que están certificadas por GitHub.
+# Son proporcionadas por un tercero y están gobernadas por
+# Terminos de servicio, política de privacidad y soporte separados.
 
-nombre: Escaneo de Seguridad Inteligente Synopsys
+name: Escaneo de Seguridad Inteligente Synopsys
 
-Sobre:
-  Empuja:
-    Ramas: [ "main" ]
+on:
+  push:
+    branches: [ "main" ]
   pull_request:
-    Ramas: [ "main" ]
-  Calendario:
+    branches: [ "main" ]
+  schedule:
     - cron: '29 16 * * 3' # Dura 16:29, solo el miércoles
 
-Jobs:
+jobs:
   synopsys-io:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Source
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Synopsys Intelligent Security Scan
-        uses: synopsys-sig/intelligent-security-scan@v1
+        uses: synopsys-sig/synopsys-action@v1.12.0
         with:
-          stage: "WORKFLOW"
+          io_url: ${{ secrets.IO_URL }}
+          io_token: ${{ secrets.IO_TOKEN }}

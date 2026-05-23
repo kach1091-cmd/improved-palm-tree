@@ -1,4 +1,3 @@
-cat << 'EOF' > .github/workflows/synopsys-io.yml
 # Este flujo de trabajo utiliza acciones que están certificadas por GitHub.
 # Son proporcionadas por un tercero y están gobernadas por
 # Terminos de servicio, política de privacidad y soporte separados.
@@ -11,7 +10,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '29 16 * * 3' # Dura 16:29, solo el miércoles
+    - cron: '29 16 * * 3'
 
 jobs:
   synopsys-io:

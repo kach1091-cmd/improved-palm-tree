@@ -11,17 +11,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Synopsys Bridge
-        run: |
-          # Descargamos el bridge desde la fuente oficial de GitHub (más estable)
-          curl -fLO https://github.com/synopsys-sig/synopsys-bridge/releases/latest/download/bridge-linux.zip
-          unzip bridge-linux.zip
-          chmod +x synopsys-bridge
-
-      - name: Run Synopsys Scan
+      - name: Setup and Run Synopsys Bridge
         env:
           COVERITY_URL: ${{ secrets.COVERITY_URL }}
           COVERITY_USER: ${{ secrets.COVERITY_USER }}
           COVERITY_PASSPHRASE: ${{ secrets.COVERITY_PASSPHRASE }}
         run: |
-          ./synopsys-bridge --stage connect --coverity.connect.url=$COVERITY_URL --coverity.connect.user=$COVERITY_USER --coverity.connect.password=$COVERITY_PASSPHRASE --coverity.connect.project.name="improved-palm-tree" --coverity.connect.stream.name="main"
+          # Descarga y prepara
+          curl -fLO https://github.com/synopsys-sig/synopsys-bridge/releases/latest/download/bridge-linux.zip
+          unzip -o bridge-linux.zip
+          chmod +x synopsys-bridge
+          
+          # Ejecuta el escaneo
+          ./synopsys-bridge --stage connect \
+            --coverity.connect.url=$COVERITY_URL \
+            --coverity.connect.user=$COVERITY_USER \
+            --coverity.connect.password=$COVERITY_PASSPHRASE \
+            --coverity.connect.project.name="${{ github.event.repository.name }}" \
+            --coverity.connect.stream.name="main"

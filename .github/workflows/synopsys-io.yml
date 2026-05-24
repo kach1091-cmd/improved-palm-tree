@@ -1,31 +1,18 @@
-name: Synopsys Intelligent Security Scan
-
-on:
-  push:
-    branches: [ "main" ]
-
-jobs:
-  synopsys-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup and Run Synopsys Bridge
-        env:
-          COVERITY_URL: ${{ secrets.COVERITY_URL }}
-          COVERITY_USER: ${{ secrets.COVERITY_USER }}
-          COVERITY_PASSPHRASE: ${{ secrets.COVERITY_PASSPHRASE }}
-        run: |
-          # Descarga y prepara
-          curl -fLO https://github.com/synopsys-sig/synopsys-bridge/releases/latest/download/bridge-linux.zip
-          unzip -o bridge-linux.zip
-          chmod +x synopsys-bridge
-          
-          # Ejecuta el escaneo
-          ./synopsys-bridge --stage connect \
-            --coverity.connect.url=$COVERITY_URL \
-            --coverity.connect.user=$COVERITY_USER \
-            --coverity.connect.password=$COVERITY_PASSPHRASE \
-            --coverity.connect.project.name="${{ github.event.repository.name }}" \
-            --coverity.connect.stream.name="main"
+- name: Setup and Run Synopsys Bridge
+      env:
+        COVERITY_URL: ${{ secrets.COVERITY_URL }}
+        COVERITY_USER: ${{ secrets.COVERITY_USER }}
+        COVERITY_PASSPHRASE: ${{ secrets.COVERITY_PASSPHRASE }}
+      run: |
+        # Descarga la versión estable usando la API de Synopsys
+        curl -fLO https://sig-repo.synopsys.com/artifactory/bds-integrations-release/com/synopsys/integration/synopsys-bridge/latest/synopsys-bridge-latest-linux64.zip
+        unzip -o synopsys-bridge-latest-linux64.zip
+        chmod +x bridge
+        
+        # Ejecuta el escaneo
+        ./bridge --stage connect \
+          --coverity.connect.url=$COVERITY_URL \
+          --coverity.connect.user=$COVERITY_USER \
+          --coverity.connect.password=$COVERITY_PASSPHRASE \
+          --coverity.connect.project.name="${{ github.event.repository.name }}" \
+          --coverity.connect.stream.name="main"

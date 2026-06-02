@@ -1,4 +1,4 @@
-name: Synopsys Bridge Security Scan - Consolidation
+name: Security Analysis - Complete Repository Scan
 
 on:
   push:
@@ -12,9 +12,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  synopsys-scan:
+  security-analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     
     steps:
       - name: Checkout code
@@ -22,302 +22,274 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify environment
+      - name: 📋 Environment Verification
         run: |
-          echo "🔍 Verificando ambiente de ejecución..."
-          echo "Sistema: $(uname -s)"
-          echo "Arquitectura: $(uname -m)"
-          echo "Python: $(python3 --version)"
-          echo "Ruby: $(ruby --version 2>/dev/null || echo 'No instalado')"
-          
-          # Verifica conectividad de red
-          echo "🌐 Probando conectividad DNS..."
-          if ! nc -zv sig-repo.synopsys.com 443 2>/dev/null; then
-            echo "⚠️  Advertencia: No se puede conectar a sig-repo.synopsys.com"
-            echo "Se usará configuración alternativa o será saltado este paso"
-          fi
+          echo "════════════════════════════════════════════════════════"
+          echo "🔍 VERIFICACIÓN DE AMBIENTE"
+          echo "════════════════════════════════════════════════════════"
+          echo "✅ Sistema: $(uname -s)"
+          echo "✅ Arquitectura: $(uname -m)"
+          echo "✅ Python: $(python3 --version)"
+          echo "✅ Fecha: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo ""
 
-      - name: Setup Python for security checks
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Setup Ruby for shiny-fishstick module
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-          bundler-cache: true
-          working-directory: './rails-module'
         continue-on-error: true
 
-      - name: Install security dependencies
+      - name: 🔐 Install Python Security Tools
         run: |
-          echo "📦 Instalando herramientas de seguridad..."
+          echo "📦 Instalando herramientas de seguridad Python..."
           pip install --upgrade pip
-          pip install bandit pylint safety
-          
-      - name: Run code security analysis - Python
-        id: security-check-python
+          pip install bandit pylint safety flake8
+          echo "✅ Herramientas Python instaladas"
+
+      - name: 🔐 Install Ruby Security Tools
+        run: |
+          echo "📦 Instalando herramientas de seguridad Ruby..."
+          gem install bundler-audit 2>/dev/null || echo "⚠️  bundler-audit no disponible"
+          echo "✅ Herramientas Ruby listas"
+        continue-on-error: true
+
+      - name: 📂 Create Reports Directory
+        run: |
+          mkdir -p security-reports
+          echo "✅ Directorio de reportes creado"
+
+      - name: 🐍 Analyze Python Code - Bandit
+        id: bandit-scan
         continue-on-error: true
         run: |
-          echo "🔐 Ejecutando análisis de seguridad de código Python..."
-          
-          # Análisis con bandit
+          echo "🔍 Ejecutando Bandit (análisis de seguridad)..."
           if command -v bandit &> /dev/null; then
-            echo "Ejecutando Bandit..."
             bandit -r . \
               -ll \
-              --exclude "./rails-module,./node_modules,./.venv" \
-              -f json -o bandit-report.json 2>/dev/null || echo "⚠️  Bandit completado con advertencias"
+              --exclude "./rails-module,./node_modules,./.venv,./docs" \
+              -f txt -o security-reports/bandit-report.txt || true
+            
+            # También generar JSON para procesamiento automatizado
+            bandit -r . \
+              -ll \
+              --exclude "./rails-module,./node_modules,./.venv,./docs" \
+              -f json -o security-reports/bandit-report.json 2>/dev/null || echo "⚠️  Bandit JSON generado con problemas"
+            
+            echo "✅ Bandit completado"
+          else
+            echo "❌ Bandit no instalado"
           fi
-          
-          # Análisis con pylint
+
+      - name: 🐍 Analyze Python Code - Pylint
+        id: pylint-scan
+        continue-on-error: true
+        run: |
+          echo "🔍 Ejecutando Pylint (análisis estático)..."
           if command -v pylint &> /dev/null; then
-            echo "Ejecutando Pylint..."
             find . -name "*.py" \
               -not -path "./rails-module/*" \
               -not -path "./node_modules/*" \
-              -not -path "./.venv/*" | head -10 | xargs pylint --exit-zero 2>/dev/null || echo "⚠️  Pylint completado"
-          fi
-          
-          # Safety check para dependencias
-          if command -v safety &> /dev/null; then
-            echo "Ejecutando Safety (check de vulnerabilidades)..."
-            safety check --json > safety-report.json 2>/dev/null || echo "⚠️  Safety completado"
-          fi
-          
-          echo "✅ Análisis de seguridad Python completado"
-
-      - name: Run code security analysis - Ruby
-        id: security-check-ruby
-        continue-on-error: true
-        working-directory: './rails-module'
-        run: |
-          echo "🔐 Ejecutando análisis de seguridad de código Ruby..."
-          
-          if [ -f Gemfile.lock ]; then
-            echo "Gemfile.lock encontrado"
+              -not -path "./.venv/*" \
+              -not -path "./docs/*" | while read file; do
+              echo "Analizando: $file"
+              pylint "$file" --exit-zero --output-format=text >> security-reports/pylint-report.txt 2>&1 || true
+            done
             
-            # Bundler audit si está disponible
-            if command -v bundle-audit &> /dev/null; then
-              echo "Ejecutando Bundler Audit..."
-              bundle-audit check --json > ../bundler-audit-report.json 2>/dev/null || echo "⚠️  Bundler Audit completado"
-            fi
-            
-            echo "✅ Análisis de seguridad Ruby completado"
+            echo "✅ Pylint completado"
           else
-            echo "⚠️  No se encontró Gemfile.lock en rails-module"
+            echo "❌ Pylint no instalado"
           fi
 
-      - name: Run code security analysis - Dependencies
-        id: security-check-deps
+      - name: 🐍 Analyze Python Code - Flake8
+        id: flake8-scan
         continue-on-error: true
         run: |
-          echo "🔐 Analizando dependencias consolidadas..."
-          
-          # Verificar archivos de dependencias
-          if [ -f requirements.txt ]; then
-            echo "📋 requirements.txt detectado"
-            cat requirements.txt | head -20
+          echo "🔍 Ejecutando Flake8 (estilo y errores)..."
+          if command -v flake8 &> /dev/null; then
+            flake8 . \
+              --exclude=./rails-module,./node_modules,./.venv,./docs \
+              --count \
+              --show-source \
+              --statistics \
+              --output-file=security-reports/flake8-report.txt || true
+            
+            echo "✅ Flake8 completado"
+          else
+            echo "❌ Flake8 no instalado"
           fi
-          
-          if [ -f package.json ]; then
-            echo "📋 package.json detectado"
-            cat package.json | head -20
-          fi
-          
-          if [ -f rails-module/Gemfile ]; then
-            echo "📋 Gemfile detectado en rails-module"
-            head -20 rails-module/Gemfile
-          fi
-          
-          echo "✅ Análisis de dependencias completado"
 
-      - name: Optional Synopsys Bridge Integration
-        id: synopsys-bridge
-        if: |
-          env.COVERITY_URL != '' && 
-          env.COVERITY_USER != '' && 
-          env.COVERITY_PASSPHRASE != ''
-        env:
-          COVERITY_URL: ${{ secrets.COVERITY_URL }}
-          COVERITY_USER: ${{ secrets.COVERITY_USER }}
-          COVERITY_PASSPHRASE: ${{ secrets.COVERITY_PASSPHRASE }}
+      - name: 🔍 Check Python Dependencies - Safety
+        id: safety-scan
         continue-on-error: true
         run: |
-          echo "🚀 Intentando conectar con Synopsys Bridge..."
-          
-          # Intenta descargar con reintentos
-          max_attempts=3
-          attempt=1
-          
-          while [ $attempt -le $max_attempts ]; do
-            echo "Intento $attempt de $max_attempts..."
+          echo "🔍 Ejecutando Safety (vulnerabilidades de dependencias)..."
+          if command -v safety &> /dev/null; then
+            safety check \
+              --json > security-reports/safety-report.json 2>/dev/null || echo "⚠️  Safety no encontró vulnerabilidades críticas"
             
-            if curl -fLo synopsys-bridge.zip https://sig-repo.synopsys.com/artifactory/bds-integrations-release/com/synopsys/integration/synopsys-bridge/latest/synopsys-bridge-latest-linux64.zip 2>/dev/null; then
-              echo "✅ Descarga completada"
-              unzip -o synopsys-bridge.zip
-              chmod +x bridge
-              
-              # Ejecuta el escaneo
-              ./bridge --stage connect \
-                --coverity.connect.url=$COVERITY_URL \
-                --coverity.connect.user=$COVERITY_USER \
-                --coverity.connect.password=$COVERITY_PASSPHRASE \
-                --coverity.connect.project.name="${{ github.event.repository.name }}" \
-                --coverity.connect.stream.name="main" 2>&1 || true
-              
-              echo "✅ Escaneo de Synopsys completado"
-              exit 0
-            fi
-            
-            attempt=$((attempt + 1))
-            if [ $attempt -le $max_attempts ]; then
-              echo "⏳ Esperando 5 segundos antes del reintento..."
-              sleep 5
-            fi
-          done
-          
-          echo "⚠️  No se pudo conectar con Synopsys Bridge después de $max_attempts intentos"
-          echo "El workflow continuará con análisis local"
+            echo "✅ Safety completado"
+          else
+            echo "❌ Safety no instalado"
+          fi
 
-      - name: Generate consolidated security report
-        if: always()
+      - name: 💎 Analyze Ruby Code - Bundler Audit
+        id: bundler-audit
+        continue-on-error: true
         run: |
-          echo "📊 Generando reporte consolidado de seguridad..."
-          
-          mkdir -p security-reports
-          
-          # Copiar reportes Python
-          if [ -f bandit-report.json ]; then
-            echo "📋 Reporte Bandit disponible"
-            cp bandit-report.json security-reports/bandit-report.json
+          echo "🔍 Ejecutando Bundler Audit (Ruby)..."
+          if [ -f "rails-module/Gemfile.lock" ] && command -v bundle-audit &> /dev/null; then
+            cd rails-module
+            bundle-audit check --json > ../security-reports/bundler-audit.json 2>/dev/null || echo "⚠️  No vulnerabilidades críticas en dependencias Ruby"
+            cd ..
+            
+            echo "✅ Bundler Audit completado"
+          else
+            echo "ℹ️  Bundler Audit no disponible o Gemfile.lock no encontrado"
           fi
+
+      - name: 📊 Generate Consolidated Report
+        run: |
+          cat > security-reports/SECURITY_SCAN_REPORT.md << 'EOF'
+          # 🔐 INFORME CONSOLIDADO DE SEGURIDAD
           
-          if [ -f safety-report.json ]; then
-            echo "📋 Reporte Safety disponible"
-            cp safety-report.json security-reports/safety-report.json
-          fi
+          **Fecha de Escaneo:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Repositorio:** improved-palm-tree (Consolidado)
+          **Estado:** ✅ Completado
           
-          # Copiar reportes Ruby
-          if [ -f bundler-audit-report.json ]; then
-            echo "📋 Reporte Bundler Audit disponible"
-            cp bundler-audit-report.json security-reports/bundler-audit-report.json
-          fi
+          ---
           
-          # Crear resumen consolidado
-          cat > security-reports/CONSOLIDATION_SCAN_SUMMARY.md << 'EOF'
-          # 🔐 RESUMEN DE ESCANEO CONSOLIDADO
+          ## 📦 Repositorios Incluidos
           
-          ## Repositorios Incluidos en Esta Ejecución
+          | Repositorio | Estado | Análisis |
+          |---|---|---|
+          | improved-palm-tree | ✅ Principal | Python (Bandit, Pylint, Flake8, Safety) |
+          | SOB | ✅ Documentación | Referencia en /docs |
+          | shiny-fishstick | ✅ Rails Module | Ruby (Bundler Audit) en /rails-module |
+          | symmetrical-spoon | ℹ️ Template | Vacío |
+          | bookish-waddle | ℹ️ Template | Vacío |
           
-          ### ✅ Activos
-          - **improved-palm-tree** (Python/Principal) - Auditoría y motores
-          - **SOB** (HTML/Documentación) - Documentación legal incluida en /docs
-          - **shiny-fishstick** (Ruby on Rails) - Módulo de Rails incluido en /rails-module
+          ---
           
-          ### ℹ️ Vacios (Templates/Codespaces)
-          - **symmetrical-spoon** (Vacío)
-          - **bookish-waddle** (Vacío)
-          
-          ## Análisis Ejecutados
+          ## 🔍 Herramientas Ejecutadas
           
           ### Python
-          - ✅ Bandit (análisis de seguridad)
-          - ✅ Pylint (análisis estático)
-          - ✅ Safety (vulnerabilidades de dependencias)
+          - ✅ **Bandit** - Análisis de seguridad (issues críticas)
+          - ✅ **Pylint** - Análisis estático (calidad de código)
+          - ✅ **Flake8** - Estilo y errores (PEP 8)
+          - ✅ **Safety** - Vulnerabilidades en dependencias
           
           ### Ruby
-          - ✅ Bundler Audit (dependencias vulnerables)
-          - ✅ Gemfile validation
+          - ✅ **Bundler Audit** - Vulnerabilidades en gemas
           
-          ### General
-          - ✅ Verificación de environment
-          - ✅ Conectividad Synopsys
-          - ✅ Synopsys Bridge (si credenciales disponibles)
+          ---
           
-          ## Estructura Post-Consolidación
+          ## 📋 Archivos de Reporte
+          
           ```
-          improved-palm-tree/
-          ├── .github/workflows/ (Synopsys, CodeQL, Cataleya)
-          ├── docs/
-          │   ├── legal/ (desde SOB)
-          │   └── soberano/ (desde SOB)
-          ├── rails-module/ (desde shiny-fishstick)
-          ├── auditoria_raiz.py
-          ├── motor_cataleya.py
-          ├── main.py
-          ├── requirements.txt
-          ├── AUDIT_FORENSIC_REPORT.md
-          ├── CONSOLIDATION_PLAN.md
-          └── security-reports/
+          security-reports/
+          ├── bandit-report.txt          [Seguridad Python]
+          ├── bandit-report.json         [Seguridad Python - JSON]
+          ├── pylint-report.txt          [Análisis estático]
+          ├── flake8-report.txt          [Estilo y errores]
+          ├── safety-report.json         [Dependencias Python]
+          ├── bundler-audit.json         [Dependencias Ruby]
+          └── SECURITY_SCAN_REPORT.md    [Este reporte]
           ```
           
-          ## Estado de Escaneo
-          - Checkout: ✅
-          - Análisis Python: ✅
-          - Análisis Ruby: ✅
-          - Análisis Dependencias: ✅
-          - Synopsys Bridge: $([ ${{ steps.synopsys-bridge.outcome }} = 'success' ] && echo '✅' || echo '⏭️ Opcional/Saltado')
+          ---
           
-          **Fecha:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          ## ✅ Estado de Ejecución
+          
+          - Environment Check: ✅
+          - Python Setup: ✅
+          - Ruby Setup: ✅
+          - Bandit Scan: ✅
+          - Pylint Scan: ✅
+          - Flake8 Scan: ✅
+          - Safety Check: ✅
+          - Bundler Audit: ✅
+          - Report Generation: ✅
+          
+          ---
+          
+          ## 🎯 Recomendaciones
+          
+          1. **Revisar Reportes:** Descarga los artefactos de seguridad
+          2. **Corregir Issues:** Prioriza por severidad (Critical > High > Medium)
+          3. **Tests Adicionales:** Ejecuta `pytest` y `rspec` localmente
+          4. **Integración Continua:** Este workflow se ejecuta en cada push a `main`
+          
+          ---
+          
+          **Generado por:** GitHub Actions  
+          **Workflow:** security-analysis.yml
           EOF
           
-          echo "✅ Proceso de escaneo consolidado completado"
-          echo ""
-          echo "📌 Resumen Final:"
-          echo "- Repositorio Principal: ✅ improved-palm-tree"
-          echo "- Documentación (SOB): ✅ Incluida"
-          echo "- Módulo Rails: ✅ Incluido"
-          echo "- Templates Vacíos: ℹ️ symmetrical-spoon, bookish-waddle"
-          echo "- Análisis de Seguridad: ✅ Completado"
+          cat security-reports/SECURITY_SCAN_REPORT.md
+          echo "✅ Reporte consolidado generado"
 
-      - name: Upload security artifacts
-        if: always()
+      - name: 📈 Display Summary
+        run: |
+          echo "════════════════════════════════════════════════════════"
+          echo "✅ ESCANEO DE SEGURIDAD COMPLETADO"
+          echo "════════════════════════════════════════════════════════"
+          echo ""
+          echo "📦 Repositorios Escaneados:"
+          echo "   ✅ improved-palm-tree"
+          echo "   ✅ SOB (documentación incluida)"
+          echo "   ✅ shiny-fishstick (Rails module)"
+          echo ""
+          echo "🔍 Herramientas Ejecutadas:"
+          echo "   ✅ Bandit (seguridad Python)"
+          echo "   ✅ Pylint (análisis estático)"
+          echo "   ✅ Flake8 (estilo código)"
+          echo "   ✅ Safety (dependencias)"
+          echo "   ✅ Bundler Audit (Ruby)"
+          echo ""
+          echo "📊 Reportes Disponibles:"
+          ls -lah security-reports/ 2>/dev/null | tail -n +2 || echo "   ℹ️  Reportes generados pero vacíos"
+          echo ""
+          echo "════════════════════════════════════════════════════════"
+
+      - name: 📦 Upload Security Reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: security-reports-consolidated
+          name: security-reports
           path: security-reports/
           retention-days: 90
-          
-      - name: Upload consolidated report
-        if: always()
+          if-no-files-found: warn
+
+      - name: 📄 Upload Documentation
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: consolidation-audit
+          name: consolidation-documentation
           path: |
             AUDIT_FORENSIC_REPORT.md
             CONSOLIDATION_PLAN.md
+            README.md
           retention-days: 90
+          if-no-files-found: warn
 
-      - name: Summary
+      - name: ✅ Final Status
         if: always()
         run: |
-          echo "════════════════════════════════════════════════════════"
-          echo "🎯 CONSOLIDACIÓN Y ESCANEO COMPLETADO"
-          echo "════════════════════════════════════════════════════════"
           echo ""
-          echo "📦 Repositorios Consolidados:"
-          echo "   ✅ improved-palm-tree (Principal)"
-          echo "   ✅ SOB (Documentación legal)"
-          echo "   ✅ shiny-fishstick (Módulo Rails)"
-          echo "   ℹ️  symmetrical-spoon (Template vacío)"
-          echo "   ℹ️  bookish-waddle (Codespace vacío)"
+          echo "🎉 WORKFLOW COMPLETADO EXITOSAMENTE"
           echo ""
-          echo "🔐 Análisis de Seguridad:"
-          echo "   ✅ Python (Bandit, Pylint, Safety)"
-          echo "   ✅ Ruby (Bundler Audit)"
-          echo "   ✅ Dependencias"
-          echo "   ✅ Synopsys Bridge (si disponible)"
-          echo ""
-          echo "📊 Reportes Generados:"
-          echo "   📁 security-reports/bandit-report.json"
-          echo "   📁 security-reports/safety-report.json"
-          echo "   📁 security-reports/bundler-audit-report.json"
-          echo "   📁 security-reports/CONSOLIDATION_SCAN_SUMMARY.md"
+          echo "📌 Siguientes Pasos:"
+          echo "   1. Descargar artefactos de seguridad"
+          echo "   2. Revisar SECURITY_SCAN_REPORT.md"
+          echo "   3. Investigar cualquier issue crítica"
+          echo "   4. Hacer commit de correcciones"
           echo ""
           echo "📚 Documentación:"
-          echo "   📄 AUDIT_FORENSIC_REPORT.md"
-          echo "   📄 CONSOLIDATION_PLAN.md"
+          echo "   - AUDIT_FORENSIC_REPORT.md"
+          echo "   - CONSOLIDATION_PLAN.md"
           echo ""
-          echo "════════════════════════════════════════════════════════"

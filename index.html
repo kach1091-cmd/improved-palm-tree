@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Database Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2d3248;
+      --accent: #6c63ff;
+      --accent2: #4f46e5;
+      --text: #e8eaf0;
+      --muted: #8b90a8;
+      --user-bubble: #6c63ff;
+      --agent-bubble: #22263a;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --radius: 12px;
+      --font: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: 56px 1fr;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    header .logo {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    header h1 { font-size: 16px; font-weight: 600; }
+    header span { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+    /* Sidebar – records panel */
+    aside {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    #record-count {
+      background: var(--surface2);
+      border-radius: 99px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    #records-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #records-list::-webkit-scrollbar { width: 4px; }
+    #records-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .record-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .record-card:hover { border-color: var(--accent); background: #282c42; }
+    .record-card .rc-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .record-card .rc-cat {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 99px;
+      background: var(--accent2);
+      color: #d4d0ff;
+      margin-bottom: 4px;
+    }
+    .record-card .rc-content { font-size: 12px; color: var(--muted); line-height: 1.5; white-space: pre-line; word-break: break-word; }
+    .record-card .rc-date { font-size: 10px; color: var(--border); margin-top: 6px; }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 32px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+    .empty-state .es-icon { font-size: 32px; }
+
+    /* Main chat area */
+    main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #chat-messages::-webkit-scrollbar { width: 4px; }
+    #chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .msg {
+      display: flex;
+      gap: 10px;
+      max-width: 720px;
+    }
+    .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+    .msg .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .msg.user .avatar { background: var(--accent); }
+    .msg.agent .avatar { background: var(--surface2); border: 1px solid var(--border); }
+    .msg .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.user .bubble {
+      background: var(--user-bubble);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.agent .bubble {
+      background: var(--agent-bubble);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .thinking {
+      display: flex; gap: 4px; padding: 14px 16px;
+      background: var(--agent-bubble);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+    }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted); animation: bounce .9s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .15s; }
+    .dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    #message-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      min-height: 48px;
+      max-height: 160px;
+      outline: none;
+      transition: border-color .15s;
+      overflow-y: auto;
+    }
+    #message-input:focus { border-color: var(--accent); }
+    #message-input::placeholder { color: var(--muted); }
+    #send-btn {
+      width: 48px; height: 48px;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, transform .1s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover { background: var(--accent2); }
+    #send-btn:active { transform: scale(.95); }
+    #send-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .suggestions {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 0 24px 12px;
+    }
+    .suggestion {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .suggestion:hover { border-color: var(--accent); color: var(--text); }
+
+    @media (max-width: 680px) {
+      body { grid-template-columns: 1fr; grid-template-rows: 56px auto 1fr; }
+      aside { max-height: 220px; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🤖</div>
+  <h1>AI Database Agent</h1>
+  <span>Powered by Claude + Netlify Database</span>
+</header>
+
+<aside>
+  <div class="sidebar-header">
+    Records
+    <span id="record-count">0</span>
+  </div>
+  <div id="records-list">
+    <div class="empty-state">
+      <span class="es-icon">🗄️</span>
+      Ask the agent to create some records!
+    </div>
+  </div>
+</aside>
+
+<main>
+  <div id="chat-messages">
+    <div class="msg agent">
+      <div class="avatar">🤖</div>
+      <div class="bubble">Hi! I'm your AI database assistant. I can help you <strong>create</strong>, <strong>read</strong>, <strong>update</strong>, and <strong>delete</strong> records in your Netlify Database.
+
+Try asking me something like:
+• "Show me all records"
+• "Create a note about project deadlines"
+• "Add a contact: Alice, alice@example.com"
+• "Search for anything related to meetings"</div>
+    </div>
+  </div>
+
+  <div class="suggestions">
+    <button class="suggestion" onclick="sendSuggestion('Show all records')">Show all records</button>
+    <button class="suggestion" onclick="sendSuggestion('Create a task: Review quarterly report')">Add a task</button>
+    <button class="suggestion" onclick="sendSuggestion('Create a note about the project status')">Add a note</button>
+    <button class="suggestion" onclick="sendSuggestion('How many records are in the database?')">Count records</button>
+  </div>
+
+  <div class="input-area">
+    <textarea
+      id="message-input"
+      placeholder="Ask the agent to manage your database…"
+      rows="1"
+    ></textarea>
+    <button id="send-btn" onclick="sendMessage()" title="Send">➤</button>
+  </div>
+</main>
+
+<script>
+  const chatEl = document.getElementById('chat-messages');
+  const inputEl = document.getElementById('message-input');
+  const sendBtn = document.getElementById('send-btn');
+  const recordsList = document.getElementById('records-list');
+  const recordCount = document.getElementById('record-count');
+
+  let history = [];
+
+  // Auto-resize textarea
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+  });
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  function sendSuggestion(text) {
+    inputEl.value = text;
+    sendMessage();
+  }
+
+  function appendMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = role === 'user' ? '👤' : '🤖';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return div;
+  }
+
+  function showThinking() {
+    const div = document.createElement('div');
+    div.className = 'msg agent';
+    div.id = 'thinking-indicator';
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = '🤖';
+    const bubble = document.createElement('div');
+    bubble.className = 'thinking';
+    bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function hideThinking() {
+    const el = document.getElementById('thinking-indicator');
+    if (el) el.remove();
+  }
+
+  async function loadRecords() {
+    try {
+      const res = await fetch('/api/records');
+      if (!res.ok) return;
+      const data = await res.json();
+      recordCount.textContent = data.length;
+      if (!data.length) {
+        recordsList.innerHTML = `<div class="empty-state"><span class="es-icon">🗄️</span>No records yet. Ask the agent to create some!</div>`;
+        return;
+      }
+      recordsList.innerHTML = data.map(r => `
+        <div class="record-card">
+          <div class="rc-cat">${escHtml(r.category)}</div>
+          <div class="rc-title">${escHtml(r.title)}</div>
+          ${r.content ? `<div class="rc-content">${escHtml(r.content)}</div>` : ''}
+          <div class="rc-date">#${r.id} · ${new Date(r.created_at).toLocaleString()}</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      console.error('Failed to load records:', e);
+    }
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text || sendBtn.disabled) return;
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    appendMessage('user', text);
+    showThinking();
+
+    try {
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history }),
+      });
+
+      hideThinking();
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        appendMessage('agent', `Sorry, something went wrong: ${err.error || res.statusText}`);
+      } else {
+        const { response } = await res.json();
+        appendMessage('agent', response);
+        history.push({ role: 'user', content: text });
+        history.push({ role: 'assistant', content: response });
+        // Keep history to last 20 turns to avoid token bloat
+        if (history.length > 40) history = history.slice(-40);
+        await loadRecords();
+      }
+    } catch (e) {
+      hideThinking();
+      appendMessage('agent', 'Network error — please try again.');
+    }
+
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+
+  // Initial load
+  loadRecords();
+</script>
+</body>
+</html>

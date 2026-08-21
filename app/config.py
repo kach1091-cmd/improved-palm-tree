@@ -1,0 +1,28 @@
+import os
+from pathlib import Path
+
+# DIRECTORIO BASE
+BASE_DIR = Path(__file__).parent.parent
+
+# AUDITORÍA
+AUDIT_DIR = BASE_DIR / "INFORMES_AUDITORIA"
+AUDIT_CYCLE_HOURS = 3
+AUDIT_CLEANUP_DAYS = 7
+
+# RASTREO
+TRACKING_LOCATIONS = ["DUBÁI", "SUIZA", "LONDRES"]
+
+# LOGGING
+LOG_DIR = BASE_DIR / "logs"
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+# KIVY
+KIVY_WINDOW_WIDTH = 1080
+KIVY_WINDOW_HEIGHT = 1920
+
+# MÓVIL (Android)
+ANDROID_PERMISSIONS = [
+    "android.permission.INTERNET",
+    "android.permission.WRITE_EXTERNAL_STORAGE",
+    "android.permission.READ_EXTERNAL_STORAGE"
+]

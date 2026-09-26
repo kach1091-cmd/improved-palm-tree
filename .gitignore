@@ -1,0 +1,163 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+virtualenv/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+
+# Logs and traces
+logs/
+*.log
+*.log.*
+security_trace.log
+BI_EVOLUCION.log
+*.log.enc
+bitacora_cataleya.log.enc
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Sensitive files
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.enc
+*.encrypted
+.credentials
+.aws/
+.ssh/
+
+# Binaries and compiled files
+*.bin
+*.o
+*.a
+*.exe
+*.dll
+*.so
+.sys_kernel_hidden.bin
+
+# Node modules (if used)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Kivy build artifacts
+*.kv
+.buildozer/
+bin/
+.kivy-cache/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+.~*
+
+# Audit reports and personal documents
+INFORMES_AUDITORIA/
+AUDITORIA_*.md
+*.docx
+*.xlsx
+*.pdf
+*.doc
+Proyecto Unicornio - Dossier*
+Cataleya soberanía*
+ProtocoloGA-DGAP-PC030.pdf
+index.html.docx
+Unicornioweb.txt
+
+# Build and dist
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Configuration with secrets
+config_motores.json
+GTM-*.json
+*.json.bak
+
+# Firebase and other services
+.firebase/
+firebase-debug.log
+
+# Misc
+*.swo
+*.swp
+.svn/
+.hg/
+.git-credentials
